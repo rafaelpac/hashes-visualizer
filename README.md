@@ -1,6 +1,6 @@
 # SHA-256 Visualizer
 
-![SHA-256 Visualizer](public/thumbnail.png)
+![SHA-256 Visualizer](public/demo.gif)
 
 **An animated, step-by-step visualizer for SHA-256.**
 

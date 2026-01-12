@@ -403,6 +403,7 @@ function App() {
   const [inputPlaceholder, setInputPlaceholderInput] = useState('Enter message to hash...');
   const [chunksCount, setChunksCount] = useState(1);
   const [autoplay, setAutoplay] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(true);
 
   const k = [
     1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993,
@@ -826,7 +827,7 @@ function App() {
           </div>
 
           {/* Column 2: Message schedule w[0..63] */}
-          <div className={`w-[400px] shrink-0 border-r border-gray-800 p-2 flex flex-col transition-opacity ${scheduleDone && phase !== 'schedule' && phase !== 'chunk' && phase !== 'compress' ? 'opacity-20' : ''}`}>
+          <div className={`w-[400px] shrink-0 border-r border-gray-800 p-2 flex flex-col overflow-hidden transition-opacity ${scheduleDone && phase !== 'schedule' && phase !== 'chunk' && phase !== 'compress' ? 'opacity-20' : ''}`}>
             <div 
               onClick={() => jumpToPhase(6)}
               className="text-[10px] uppercase tracking-wider text-green-600 mb-1 cursor-pointer hover:text-green-400 hover:underline underline-offset-2 transition-all inline-block shrink-0"
@@ -835,7 +836,7 @@ function App() {
               {phase === 'chunk' || phase === 'schedule' ? '● Message schedule' : scheduleDone ? '✓ w[0..63]' : '○ Message schedule'} <span className="text-[9px] opacity-50">↗</span>
             </div>
             
-            <div className="space-y-0 flex-1 overflow-y-auto leading-tight">
+            <div className="space-y-0 flex-1 overflow-y-auto overflow-x-hidden leading-tight">
               {Array.from({length: 64}).map((_, i) => {
                 const computed = i <= wComputedUpTo;
                 const current = i === currentWIndex;
@@ -856,15 +857,15 @@ function App() {
                 const dimmedDuringSchedule = phase === 'schedule' && currentWIndex !== null && !current && !isDependency;
                 
                 return (
-                  <div key={i} className={`flex gap-1.5 text-[11px] transition-opacity ${current ? 'bg-gray-800 -mx-1 px-1 rounded' : usedInCompression ? 'bg-purple-900/50 -mx-1 px-1 rounded' : ''} ${dimmedDuringCompression || dimmedDuringSchedule ? 'opacity-30' : ''}`}>
+                  <div key={i} className={`flex gap-1.5 text-[11px] transition-opacity whitespace-nowrap ${current ? 'bg-gray-800 -mx-1 px-1 rounded' : usedInCompression ? 'bg-purple-900/50 -mx-1 px-1 rounded' : ''} ${dimmedDuringCompression || dimmedDuringSchedule ? 'opacity-30' : ''}`}>
                     <span className={`w-8 shrink-0 ${current ? 'text-green-400 font-bold' : usedInCompression ? 'text-purple-400 font-bold' : isDependency ? 'text-gray-500' : computed ? (fromChunk ? 'text-yellow-600' : 'text-green-600') : 'text-gray-800'}`}>w{i}</span>
-                    <span className={`${current ? 'text-white' : usedInCompression ? 'text-purple-300' : isDependency ? 'text-gray-600 opacity-60' : computed ? 'text-gray-500' : 'text-gray-900'}`}>{toBin(wView[i])}</span>
-                    {current && <span className="ml-1 text-[10px] text-green-400 font-bold">◄ COMPUTING</span>}
-                    {usedInCompression && <span className="ml-1 text-[10px] text-purple-400 font-bold">◄ USING</span>}
-                    {isW16 && <span className="text-gray-500 ml-1 text-[10px]">+w[{i}]</span>}
-                    {isW15 && <span className="text-orange-400/60 ml-1 text-[10px]">+σ₀(w[{i}])</span>}
-                    {isW7 && <span className="text-gray-500 ml-1 text-[10px]">+w[{i}]</span>}
-                    {isW2 && <span className="text-yellow-400/60 ml-1 text-[10px]">+σ₁(w[{i}])</span>}
+                    <span className={`shrink-0 ${current ? 'text-white' : usedInCompression ? 'text-purple-300' : isDependency ? 'text-gray-600 opacity-60' : computed ? 'text-gray-500' : 'text-gray-900'}`}>{toBin(wView[i])}</span>
+                    {current && <span className="ml-1 text-[10px] text-green-400 font-bold shrink-0">◄ COMPUTING</span>}
+                    {usedInCompression && <span className="ml-1 text-[10px] text-purple-400 font-bold shrink-0">◄ USING</span>}
+                    {isW16 && <span className="text-gray-500 ml-1 text-[10px] shrink-0">+w[{i}]</span>}
+                    {isW15 && <span className="text-orange-400/60 ml-1 text-[10px] shrink-0">+σ₀(w[{i}])</span>}
+                    {isW7 && <span className="text-gray-500 ml-1 text-[10px] shrink-0">+w[{i}]</span>}
+                    {isW2 && <span className="text-yellow-400/60 ml-1 text-[10px] shrink-0">+σ₁(w[{i}])</span>}
                   </div>
                 );
               })}
@@ -1035,8 +1036,12 @@ function App() {
         </div>
 
         {/* RIGHT SIDE: Detailed step-by-step explanation */}
-        <div className="w-[460px] shrink-0 border-l-2 border-green-500/60 p-3 bg-green-950/40 overflow-y-auto overflow-x-hidden flex flex-col">
-          <div className="text-xs uppercase tracking-wider text-green-600 mb-2 shrink-0">Step Details</div>
+        {showExplanation ? (
+        <div className="w-[450px] shrink-0 border-l border-green-500/40 bg-green-950/40 overflow-y-auto overflow-x-hidden flex flex-col p-3">
+          <div className="flex items-center justify-between mb-2 shrink-0">
+            <span className="text-xs uppercase tracking-wider text-green-600">Step Details</span>
+            <button onClick={() => setShowExplanation(false)} className="text-gray-500 hover:text-white text-lg leading-none px-1">×</button>
+          </div>
           
           {/* Main explanation content */}
           <div className="flex-1">
@@ -1116,6 +1121,15 @@ function App() {
           )}
           
         </div>
+        ) : (
+          <button 
+            onClick={() => setShowExplanation(true)} 
+            className="shrink-0 w-10 bg-green-950/80 border-l border-green-500/50 text-green-500 hover:text-green-300 hover:bg-green-900/60 flex flex-col items-center justify-center gap-1"
+            title="Show step details"
+          >
+            <span className="text-lg">?</span>
+          </button>
+        )}
       </div>
     </div>
   );
