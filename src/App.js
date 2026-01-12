@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   padding,
   chunkString,
@@ -404,6 +404,7 @@ function App() {
   const [chunksCount, setChunksCount] = useState(1);
   const [autoplay, setAutoplay] = useState(false);
   const [showExplanation, setShowExplanation] = useState(true);
+  const finalHashRef = useRef(null);
 
   const k = [
     1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993,
@@ -431,6 +432,17 @@ function App() {
   useEffect(() => {
     setPaddedInput(padding('', inputBase));
   }, []);
+
+  // Auto-scroll to final hash when it's complete
+  useEffect(() => {
+    const cycleClk = clock % 121;
+    const isFinished = clock >= lastClockStateless(chunksCount);
+    const isDigestPhase = cycleClk >= 117;
+    
+    if ((isFinished || isDigestPhase) && finalHashRef.current) {
+      finalHashRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [clock, chunksCount]);
 
   function onAutoClock() {
     setAutoplay(!autoplay);
@@ -817,7 +829,7 @@ function App() {
       <div className="flex-1 flex flex-col lg:flex-row overflow-auto lg:overflow-hidden min-h-0">
         
         {/* LEFT SIDE: Data columns */}
-        <div className="flex-1 flex flex-col lg:flex-row lg:items-stretch overflow-x-auto overflow-y-auto lg:overflow-y-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row lg:items-stretch overflow-x-auto overflow-y-auto lg:overflow-y-hidden horizontal-scroll">
           
           {/* Column 1: Message → Padded block */}
           <div className={`w-full lg:w-[290px] shrink-0 border-b lg:border-b-0 lg:border-r border-gray-800 p-3 lg:p-2 overflow-hidden transition-opacity ${paddingDone && phase !== 'padding' ? 'lg:opacity-20' : ''}`}>
@@ -1066,7 +1078,7 @@ function App() {
         </div>
 
           {/* Column 4: Final hash h0..h7 */}
-          <div className={`w-full lg:w-[320px] shrink-0 p-3 lg:p-2 transition-opacity ${!compressDone ? 'lg:opacity-20' : ''}`}>
+          <div ref={finalHashRef} className={`w-full lg:w-[320px] shrink-0 p-3 lg:p-2 transition-opacity ${!compressDone ? 'lg:opacity-20' : ''}`}>
             <div 
               onClick={() => jumpToPhase(lastClockValue)}
               className="text-[11px] lg:text-xs uppercase tracking-wider text-green-600 mb-2 cursor-pointer hover:text-green-400 hover:underline underline-offset-2 transition-all inline-block"

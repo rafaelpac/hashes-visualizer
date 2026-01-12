@@ -109,6 +109,32 @@
   border-radius: 2px;
 }
 
+/* Visible horizontal scrollbar for main content */
+.horizontal-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: rgba(30, 30, 30, 0.8);
+  border-radius: 5px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(74, 222, 128, 0.5);
+  border-radius: 5px;
+  border: 2px solid rgba(30, 30, 30, 0.8);
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.8);
+}
+
+/* Firefox scrollbar */
+.horizontal-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(74, 222, 128, 0.5) rgba(30, 30, 30, 0.8);
+}
+
 /* Mobile header improvements */
 @media (max-width: 1023px) {
   .mobile-header-input {
