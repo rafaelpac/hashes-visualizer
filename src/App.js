@@ -14,7 +14,7 @@ import {
 import { WCalculationAnimation, CompressionRoundExplainer } from './components/BitAnimations';
 
 // Detailed Explanation Panel - Shows exact step-by-step operations with actual values
-function DetailedExplainer({ phase, paddingStep, currentWIndex, currentRound, input, inputBinary, inputLength, kZeros, lengthBits, wView, letters, lettersBefore, k, toBin }) {
+function DetailedExplainer({ phase, paddingStep, digestStep, currentWIndex, currentRound, input, inputBinary, inputLength, kZeros, lengthBits, wView, letters, lettersBefore, hs, hsBefore, k, toBin }) {
 
   if (phase === 'padding') {
     const titles = ["Message → Bits", "Add '1' marker", "Pad with zeros", "Add length", "Block ready"];
@@ -313,11 +313,90 @@ function DetailedExplainer({ phase, paddingStep, currentWIndex, currentRound, in
   }
 
   if (phase === 'digest') {
+    const varNames = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const titles = ["Compression Complete", "Update Hash Values", "Concatenate", "Final Hash"];
+    
     return (
       <div className="space-y-5">
-        <div className="text-emerald-400 font-bold text-base">Final Hash</div>
-        <div className="text-gray-400 text-sm leading-relaxed">Add a..h back to h0..h7</div>
-        <div className="text-gray-500 text-sm leading-relaxed">Concatenate all 8 words → 256 bits</div>
+        <div className="text-emerald-400 font-bold text-base">{titles[digestStep]}</div>
+        
+        {/* Step 0: Intro - compression is done */}
+        {digestStep === 0 && (
+          <div className="space-y-4">
+            <div className="text-gray-400 text-sm leading-relaxed">
+              All 64 compression rounds are complete!
+            </div>
+            <div className="text-gray-500 text-sm leading-relaxed">
+              Now we need to update the hash values H₀..H₇ by adding back the working variables a..h.
+            </div>
+            <div className="bg-gray-800/50 rounded p-3 space-y-1.5 font-mono text-[10px]">
+              <div className="text-gray-500 mb-2">Final working variables:</div>
+              {letters.length > 0 && varNames.map((v, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-purple-400 w-4">{v}</span>
+                  <span className="text-gray-500">=</span>
+                  <span className="text-purple-300">{toBin(letters[i])}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 1: Add working variables back to hash values */}
+        {digestStep === 1 && (
+          <div className="space-y-4">
+            <div className="text-gray-400 text-sm leading-relaxed">
+              Add the final a..h values back to H₀..H₇ (mod 2³²)
+            </div>
+            
+            <div className="bg-gray-800/50 rounded p-3 space-y-1.5 font-mono text-[10px]">
+              {hsBefore.length > 0 && letters.length > 0 && varNames.map((v, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-green-400 w-6">H{i}</span>
+                  <span className="text-gray-500">=</span>
+                  <span className="text-gray-600 w-6">H{i}</span>
+                  <span className="text-gray-500">+</span>
+                  <span className="text-purple-400 w-4">{v}</span>
+                  <span className="text-gray-700 mx-1">→</span>
+                  <span className="text-green-300">{toBin(hs[i])}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Concatenate */}
+        {digestStep === 2 && (
+          <div className="space-y-4">
+            <div className="text-gray-400 text-sm leading-relaxed">
+              Join H₀ through H₇ to form the final 256-bit hash
+            </div>
+            
+            <div className="bg-gray-800/50 rounded p-3 space-y-3">
+              <div className="text-[10px] text-gray-500">H₀ ∥ H₁ ∥ H₂ ∥ H₃ ∥ H₄ ∥ H₅ ∥ H₆ ∥ H₇</div>
+              <div className="text-green-400/70 font-mono text-[8px] break-all leading-relaxed">
+                {hs.map(h => toBin(h)).join('')}
+              </div>
+              <div className="text-gray-600 text-[10px]">256 bits total</div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Convert to hex - Final */}
+        {digestStep >= 3 && (
+          <div className="space-y-4">
+            <div className="text-gray-400 text-sm leading-relaxed">
+              Each 4 bits → 1 hex digit (256 bits → 64 hex chars)
+            </div>
+            
+            <div className="bg-green-900/30 border border-green-500/40 rounded p-4">
+              <div className="text-[10px] text-green-300/70 mb-2 uppercase tracking-wider">SHA-256 Result</div>
+              <div className="text-green-400 font-mono text-sm break-all leading-relaxed tracking-wide font-bold">
+                {hs.map(h => (h >>> 0).toString(16).padStart(8, '0')).join('')}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -413,22 +492,22 @@ function App() {
   }
 
   function firstLoop(clock) {
-    let step = clock % 118;
+    let step = clock % 121;
     if(step < 5) return 15;
     if(step + 11 < 64) return 10 + step;
     return 63;
   }
 
   function secondLoop(clock) {
-    let step = clock % 118;
+    let step = clock % 121;
     if(step >= 53 && step < 117) return step - 53;
     if(step >= 117) return 63;
     return 0;
   }
 
   function chunksLoop(clock) {
-    if(clock < 118) return 1;
-    return Math.floor(clock / 118) + 1;
+    if(clock < 121) return 1;
+    return Math.floor(clock / 121) + 1;
   }
 
   function onInputBaseChange(value) {
@@ -491,17 +570,17 @@ function App() {
   }
 
   function lastClock() {
-    if(chunksCount === 1) return 117;
-    return 117 + 118 * (chunksCount - 1);
+    if(chunksCount === 1) return 120; // Extended for 3 digest steps (117, 118, 119, 120)
+    return 120 + 121 * (chunksCount - 1);
   }
 
   function lastClockStateless(chunks) {
-    if(chunks === 1) return 117;
-    return 117 + 118 * (chunks - 1);
+    if(chunks === 1) return 120;
+    return 120 + 121 * (chunks - 1);
   }
 
   function cycleClock() {
-    return clock % 118;
+    return clock % 121; // Extended cycle for digest steps
   }
 
   function shaStepped(message, firstLoop, secondLoop, chunksLoop) {
@@ -577,7 +656,7 @@ function App() {
   const chunkDone = localClock >= 6;
   const scheduleDone = localClock >= 54;
   const initDone = localClock >= 55;
-  const compressDone = finished;
+  const compressDone = localClock >= 117; // Compression done when we enter digest phase
 
   // Current phase
   let phase = 'padding';
@@ -587,11 +666,14 @@ function App() {
   else if(localClock === 54) phase = 'init';
   else if(localClock === 55) phase = 'kconst';
   else if(localClock === 56) phase = 'compressintro';  // NEW: explain what compression does
-  else if(!finished) phase = 'compress';
-  else phase = 'digest';
+  else if(localClock >= 57 && localClock <= 116) phase = 'compress';
+  else if(localClock >= 117) phase = 'digest'; // Digest steps: 117, 118, 119, 120
 
   // Padding sub-step
   const paddingStep = Math.min(localClock, 4);
+  
+  // Digest sub-step (0-3)
+  const digestStep = localClock >= 117 ? Math.min(localClock - 117, 3) : 0;
 
   // Current w index
   const currentWIndex = localClock >= 6 && localClock <= 53 ? localClock + 10 : null;
@@ -775,9 +857,9 @@ function App() {
                     {current && <span className="ml-1 text-[10px] text-green-400 font-bold">◄ COMPUTING</span>}
                     {usedInCompression && <span className="ml-1 text-[10px] text-purple-400 font-bold">◄ USING</span>}
                     {isW16 && <span className="text-gray-500 ml-1 text-[10px]">+w[{i}]</span>}
-                    {isW15 && <span className="text-orange-400/60 ml-1 text-[10px]">+σ₀</span>}
+                    {isW15 && <span className="text-orange-400/60 ml-1 text-[10px]">+σ₀(w[{i}])</span>}
                     {isW7 && <span className="text-gray-500 ml-1 text-[10px]">+w[{i}]</span>}
-                    {isW2 && <span className="text-yellow-400/60 ml-1 text-[10px]">+σ₁</span>}
+                    {isW2 && <span className="text-yellow-400/60 ml-1 text-[10px]">+σ₁(w[{i}])</span>}
                   </div>
                 );
               })}
@@ -953,6 +1035,7 @@ function App() {
             <DetailedExplainer 
               phase={phase} 
               paddingStep={paddingStep} 
+              digestStep={digestStep}
               currentWIndex={currentWIndex} 
               currentRound={currentRound}
               input={input}
@@ -963,6 +1046,8 @@ function App() {
               wView={wView}
               letters={letters}
               lettersBefore={lettersBefore}
+              hs={hs}
+              hsBefore={hsBefore}
               k={k}
               toBin={toBin}
             />
