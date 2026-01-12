@@ -324,10 +324,7 @@ function DetailedExplainer({ phase, paddingStep, digestStep, currentWIndex, curr
         {digestStep === 0 && (
           <div className="space-y-4">
             <div className="text-gray-400 text-sm leading-relaxed">
-              All 64 compression rounds are complete!
-            </div>
-            <div className="text-gray-500 text-sm leading-relaxed">
-              Now we need to update the hash values H₀..H₇ by adding back the working variables a..h.
+              All 64 rounds complete. Now add a..h back to H₀..H₇.
             </div>
             <div className="bg-gray-800/50 rounded p-3 space-y-1.5 font-mono text-[10px]">
               <div className="text-gray-500 mb-2">Final working variables:</div>
@@ -345,17 +342,14 @@ function DetailedExplainer({ phase, paddingStep, digestStep, currentWIndex, curr
         {/* Step 1: Add working variables back to hash values */}
         {digestStep === 1 && (
           <div className="space-y-4">
-            <div className="text-gray-400 text-sm leading-relaxed">
-              Add the final a..h values back to H₀..H₇ (mod 2³²)
+            <div className="text-gray-400 text-sm">
+              H₀..H₇ += a..h (mod 2³²)
             </div>
-            
             <div className="bg-gray-800/50 rounded p-3 space-y-1.5 font-mono text-[10px]">
               {hsBefore.length > 0 && letters.length > 0 && varNames.map((v, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span className="text-green-400 w-6">H{i}</span>
-                  <span className="text-gray-500">=</span>
-                  <span className="text-gray-600 w-6">H{i}</span>
-                  <span className="text-gray-500">+</span>
+                  <span className="text-gray-500">+=</span>
                   <span className="text-purple-400 w-4">{v}</span>
                   <span className="text-gray-700 mx-1">→</span>
                   <span className="text-green-300">{toBin(hs[i])}</span>
@@ -369,15 +363,10 @@ function DetailedExplainer({ phase, paddingStep, digestStep, currentWIndex, curr
         {digestStep === 2 && (
           <div className="space-y-4">
             <div className="text-gray-400 text-sm leading-relaxed">
-              Join H₀ through H₇ to form the final 256-bit hash
+              Join H₀ through H₇ to form the 256-bit hash.
             </div>
-            
-            <div className="bg-gray-800/50 rounded p-3 space-y-3">
-              <div className="text-[10px] text-gray-500">H₀ ∥ H₁ ∥ H₂ ∥ H₃ ∥ H₄ ∥ H₅ ∥ H₆ ∥ H₇</div>
-              <div className="text-green-400/70 font-mono text-[8px] break-all leading-relaxed">
-                {hs.map(h => toBin(h)).join('')}
-              </div>
-              <div className="text-gray-600 text-[10px]">256 bits total</div>
+            <div className="text-gray-500 text-sm">
+              8 × 32 bits = 256 bits
             </div>
           </div>
         )}
@@ -386,14 +375,10 @@ function DetailedExplainer({ phase, paddingStep, digestStep, currentWIndex, curr
         {digestStep >= 3 && (
           <div className="space-y-4">
             <div className="text-gray-400 text-sm leading-relaxed">
-              Each 4 bits → 1 hex digit (256 bits → 64 hex chars)
+              Convert the 256-bit hash to hexadecimal.
             </div>
-            
-            <div className="bg-green-900/30 border border-green-500/40 rounded p-4">
-              <div className="text-[10px] text-green-300/70 mb-2 uppercase tracking-wider">SHA-256 Result</div>
-              <div className="text-green-400 font-mono text-sm break-all leading-relaxed tracking-wide font-bold">
-                {hs.map(h => (h >>> 0).toString(16).padStart(8, '0')).join('')}
-              </div>
+            <div className="text-gray-500 text-sm">
+              4 bits → 1 hex digit (256 bits → 64 chars)
             </div>
           </div>
         )}
@@ -1006,19 +991,22 @@ function App() {
         </div>
               ))}
               
-              {finished && (
-                <div className="mt-3 pt-2 border-t border-gray-800 space-y-3">
-                  <div>
-                    <div className="text-[10px] text-green-400/80 mb-1">Combined (256 bits):</div>
-                    <div className="text-green-400/60 font-mono text-[7px] break-all leading-normal">
-                      {hs.map(h => toBin(h)).join('')}
-                    </div>
+              {/* Step 2+: Show combined bits */}
+              {phase === 'digest' && digestStep >= 2 && (
+                <div className="mt-3 pt-2 border-t border-gray-800">
+                  <div className="text-[10px] text-green-400/80 mb-1">Combined (256 bits):</div>
+                  <div className="text-green-400/60 font-mono text-[7px] break-all leading-normal">
+                    {hs.map(h => toBin(h)).join('')}
                   </div>
-                  <div className="bg-green-900/40 border border-green-500/50 rounded-lg p-3">
-                    <div className="text-xs text-green-300 mb-2 font-bold uppercase tracking-wide">✓ SHA-256 Hash</div>
-                    <div className="text-green-400 font-mono text-sm font-bold break-all leading-relaxed tracking-wider">
-                      {result}
-                    </div>
+                </div>
+              )}
+              
+              {/* Step 3: Show final hash */}
+              {phase === 'digest' && digestStep >= 3 && (
+                <div className="mt-3 bg-green-900/40 border border-green-500/50 rounded-lg p-3">
+                  <div className="text-xs text-green-300 mb-2 font-bold uppercase tracking-wide">✓ SHA-256 Hash</div>
+                  <div className="text-green-400 font-mono text-sm font-bold break-all leading-relaxed tracking-wider">
+                    {result}
                   </div>
                 </div>
               )}
